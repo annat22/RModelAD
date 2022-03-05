@@ -101,7 +101,8 @@ manifest <- gen_manifest(idkey)
 write_csv(manifest, file=paste0("manifest_",study,".csv"))
 ```
 
-8. Generate and export individual metadata file
+8. Generate and export individual metadata file.  
+Note: BirthID and Mating ID are not currently available through the API. Therefore, it is necessary to export them manually from climb to a csv file and put it in the working directory. The file needs to include the following columns exported from climb: animalName,matingID,birthID. The script below reads the file and join this information with the metadata pulled through the API.
 ```{r}
 source("https://raw.github.com/annat22/RModelAD/master/gen_ind_meta.R")
 idkey <- read_csv("ids_key.csv")
