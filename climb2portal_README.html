@@ -199,7 +199,8 @@ One of the following key files (but not both) needs to be in your working direct
 The code below first looks for files_key.csv, if it exists it runs step 6, if not it skips step 6 and looks for ids_key.csv in step 7.<br />
 To generate only individual metadata file, use ids_key.csv to provide animal names (individualID), leave all other columns empty, and skip steps 6, 7, and 9 below.</p>
 <ul>
-<li><p>ids_key.csv This file provides animal IDs and/or sample IDs that presumably match those in the data files to be uploaded. If you start with this file, IDs are taken as given and are not validated against the data files.<br />
+<li><p>ids_key.csv (<a href="https://github.com/annat22/RModelAD/blob/master/ids_key.csv">see example here</a>)<br />
+This file provides animal IDs and/or sample IDs that presumably match those in the data files to be uploaded. If you start with this file, IDs are taken as given and are not validated against the data files.<br />
 Each row provides identifiers of one animal/sample included in a given data file. If there are 2 data files (from 2 different assays) and some animals/samples appear in both data files, there will be two rows for each of these animals/samples.</p>
 <p>columns:<br />
 assay - the data assay that is being uploaded (e.g., rnaSeq; frailty).<br />
@@ -207,7 +208,8 @@ dataDir - the directory from which the data files are being uploaded, not necess
 dataFile - the name of the data file in which the given animal/sample is included, without the path.<br />
 individualID - identifier stored on climb as Animal Name.<br />
 specimenID - identifier stored on climb as Sample Name (optional).</p></li>
-<li><p>files_key.csv This file is needed in order to extract IDs from data files. The advantage of this is that it ensures consistency between data and metadata files. Each row is either a data directory that includes single-specimen data files or one multi-specimen data file.<br />
+<li><p>files_key.csv (<a href="https://github.com/annat22/RModelAD/blob/master/files_key.csv">see example here</a>)<br />
+This file is needed in order to extract IDs from data files. The advantage of this is that it ensures consistency between data and metadata files. Each row is either a data directory that includes single-specimen data files or one multi-specimen data file.<br />
 In the case of single-specimen files, the IDs are read from the file name assuming the format individualID_specimenID_blahblahblah.extension, so for example, if file name is 50101_GT21-05064_CAAGCTAG-CGCTATGT_S163_L003_R1_001.fastq.gz, individualID is 50101 and specimenID is GT21-05064. Everything else is ignored. Any special characters or other underscores inside individualID or specimenID will mess things up.<br />
 In the case of multi-specimen files, the IDs are read from the file itself. Since different data templates use different headers for individualID and specimenID, use those columns in the files_key.csv (see below) to provide the relevant headers so that the program knows from which columns in the data file to read the relevant IDs.</p>
 <p>columns:<br />
@@ -233,7 +235,7 @@ setwd(wdir)</code></pre>
 <li>Create ID key file from your data files, or skip to step 7.<br />
 See step 2 for explanation.</li>
 </ol>
-<pre class="r"><code>source(&quot;https://raw.github.com/annat22/modeladR/master/gen_ids_key.R&quot;)
+<pre class="r"><code>source(&quot;https://raw.github.com/annat22/RModelAD/master/gen_ids_key.R&quot;)
 fl &lt;- list.files(wdir)
 if (any(grepl(&quot;files_key.csv&quot;, fl))) {
   idkey &lt;- gen_ids_key(wdir)
@@ -242,14 +244,15 @@ if (any(grepl(&quot;files_key.csv&quot;, fl))) {
 <ol start="7" style="list-style-type: decimal">
 <li>Generate and export manifest file. See step 2 for explanation.</li>
 </ol>
-<pre class="r"><code>source(&quot;https://raw.github.com/annat22/modeladR/master/gen_manifest.R&quot;)
+<pre class="r"><code>source(&quot;https://raw.github.com/annat22/RModelAD/master/gen_manifest.R&quot;)
 idkey &lt;- read_csv(&quot;ids_key.csv&quot;)
 manifest &lt;- gen_manifest(idkey)
 write_csv(manifest, file=paste0(&quot;manifest_&quot;,study,&quot;.csv&quot;))</code></pre>
 <ol start="8" style="list-style-type: decimal">
-<li>Generate and export individual metadata file</li>
+<li>Generate and export individual metadata file.<br />
+Note: BirthID and Mating ID are not currently available through the API. Therefore, it is necessary to export them manually from climb to a csv file and put it in the working directory. The file needs to include the following columns exported from climb: animalName,matingID,birthID. The script below reads the file and join this information with the metadata pulled through the API.</li>
 </ol>
-<pre class="r"><code>source(&quot;https://raw.github.com/annat22/modeladR/master/gen_ind_meta.R&quot;)
+<pre class="r"><code>source(&quot;https://raw.github.com/annat22/RModelAD/master/gen_ind_meta.R&quot;)
 idkey &lt;- read_csv(&quot;ids_key.csv&quot;)
 ind_meta &lt;- gen_ind_meta(idkey$animalName, birthMating_csv=&quot;birthIDmatingID.csv&quot;)
 write_csv(ind_meta, file=paste0(&quot;individual_animal_metadata_&quot;,study,&quot;.csv&quot;))</code></pre>
@@ -257,14 +260,14 @@ write_csv(ind_meta, file=paste0(&quot;individual_animal_metadata_&quot;,study,&q
 <li>Generate and export biospecimen metadata file.<br />
 Currently, the script requires sample names (specimenID) as stored on climb. In the near future it will be possible to provide animal names (individualID). In either cases, if samples are not on climb, this will return an empty template.</li>
 </ol>
-<pre class="r"><code>source(&quot;https://raw.github.com/annat22/modeladR/master/gen_biosp_meta.R&quot;)
+<pre class="r"><code>source(&quot;https://raw.github.com/annat22/RModelAD/master/gen_biosp_meta.R&quot;)
 idkey &lt;- read_csv(&quot;ids_key.csv&quot;)
 biosp_meta &lt;- gen_biosp_meta(samplenames=idkey$sampleName)
 write_csv(biosp_meta, file=paste0(&quot;biospecimen_metadata_&quot;,study,&quot;.csv&quot;))</code></pre>
 <ol start="10" style="list-style-type: decimal">
 <li><p>Upload files to the AD Knowledge Portal</p></li>
 <li><p>Run all<br />
-It is possible to run all the above steps simultaneously, except for step 10, using the following code. This will generate all the metadata files but will not upload anything to the portal. It will also generate an html report from this file. Change the name of the Rmd file in the line below to match the name you gave this file.</p></li>
+It is possible to run all the above steps continuously, except for step 10, using the following line of code. This will generate all the metadata files but will not upload anything to the portal. It will also generate an html report from this file. Change the name of the Rmd file in the line below to match the name you gave this file.</p></li>
 </ol>
 <pre class="r"><code>rmarkdown::render(&quot;climb2portal_README.Rmd&quot;)</code></pre>
 </div>
