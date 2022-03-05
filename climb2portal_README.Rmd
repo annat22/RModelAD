@@ -1,0 +1,132 @@
+---
+title: "climb2portal_README"
+author: "Annat Haber"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, warning=FALSE, message=FALSE, echo=FALSE}
+# This code is only needed for rendering this document
+knitr::opts_knit$set(root.dir = ".")
+knitr::opts_chunk$set(message=FALSE, warning=FALSE, error=FALSE, cache = FALSE, eval=FALSE)
+```
+
+This document provides instructions and code for pulling information from climb.bio and converting it to metadata files needed for uploading MODEL-DA data to the AD Knowledge Portal, including an individual metadata file, a biospecimen metadata, and a manifest file that lists the data files only.  
+The last step provides code for uploading the files.    
+NOTE: This code does not attempt any validation or standardization of the content pulled from climb, only coverts its format.
+
+# One-Time Installation
+
+The following steps need to be performed only once per device.  
+
+1. Download the R distribution appropriate for your system from [CRAN](https://cran.r-project.org/) and follow the promp to install.
+
+2. Once installed, open R and enter the following code in order to install needed libraries
+```{r, eval=FALSE}
+install.packages(c("tidyverse", "synapser", "readxl", "lubridate", "rmarkdown"))
+```
+
+3. Optional: download and install RStudio https://www.rstudio.com/products/rstudio/download/#download
+RStudio provides a more convenient environment to run and modify this document but it's not necessary for running the actual code.
+
+# Study-Specific Workflow
+
+The following steps need to be repeated for each study (each conversion or upload instance).  
+To run all steps simultaneously see step 11.
+
+1. Put a copy of this Rmd file in your working directory.  
+It's a good idea to create a separate directory for the input and output of this run (e.g., "portal_files"), within your study folder. It's also recommended to change the name of the file from climb2portal_README.Rmd to climb2portal_studyName.Rmd
+
+2. Create the relevant input file and put it in your working directory.  
+One of the following key files (but not both) needs to be in your working directory before running any of the code below. Either key files can include both single-specimen and multi-specimen data files.  
+The code below first looks for files_key.csv, if it exists it runs step 6, if not it skips step 6 and looks for ids_key.csv in step 7.  
+To generate only individual metadata file, use ids_key.csv to provide animal names (individualID), leave all other columns empty, and skip steps 6, 7, and 9 below.
+
+      * ids_key.csv 
+      This file provides animal IDs and/or sample IDs that presumably match those in the data files to be uploaded. If you start with this file, IDs are taken as given and are not validated against the data files.   
+      Each row provides identifiers of one animal/sample included in a given data file. If there are 2 data files (from 2 different assays) and some animals/samples appear in both data files, there will be two rows for each of these animals/samples.  
+    
+        columns:  
+        assay - the data assay that is being uploaded (e.g., rnaSeq; frailty).  
+        dataDir - the directory from which the data files are being uploaded, not necessarily the same as the current working directory. It can be given as either absolute path or relative to working directory.  
+        dataFile - the name of the data file in which the given animal/sample is included, without the path.  
+        individualID - identifier stored on climb as Animal Name.  
+        specimenID -   identifier stored on climb as Sample Name (optional).  
+      
+      * files_key.csv 
+      This file is needed in order to extract IDs from data files. The advantage of this is that it ensures consistency between data and metadata files. Each row is either a data directory that includes single-specimen data files or one multi-specimen data file.  
+      In the case of single-specimen files, the IDs are read from the file name assuming the format individualID_specimenID_blahblahblah.extension, so for example, if file name is 50101_GT21-05064_CAAGCTAG-CGCTATGT_S163_L003_R1_001.fastq.gz, individualID is 50101 and specimenID is GT21-05064. Everything else is ignored. Any special characters or other underscores inside individualID or specimenID will mess things up.  
+      In the case of multi-specimen files, the IDs are read from the file itself. Since different data templates use different headers for individualID and specimenID, use those columns in the files_key.csv (see below) to provide the relevant headers so that the program knows from which columns in the data file to read the relevant IDs.  
+      
+        columns:  
+        assay - the data assay that is being uploaded (e.g., rnaSeq; frailty).  
+        dataDir - the directory from which the data files are being uploaded, not necessarily the same as the current working directory. It can be given as either absolute path or relative to working directory.  
+        dataFile - the name of a multi-specimen data file from which to read animal/sample names, without the path.   Leave empty for single-specimen files (those will be read from dataDir).  
+        individualID - column header in multi-specimen data file from which to read individualID. Leave empty for single-specimen files.  
+        specimenID - column header in multi-specimen data file from which to read individualID. Leave empty for single-specimen files.  
+        isMultiSpecimen - "TRUE" if this row refers to a multi-specimen data file; "FALSE" if this row refers to a directory of single-specimen files.  
+                
+3. Open the Rmd file with R or RStudio from within your working directory.  
+If you open the file from any other directory you should still be fine as long as you enter the path to this directory in step 4 below.
+
+4. Change the title and author names in the header as you see fit.  
+A good practice is to change climb2portal_README to climb2portal_studyName
+
+5. Enter the study name and the path to current working directory.    
+Change study name and path in the code lines below and run them.  
+If you opened this Rmd file from within your working directory, enter "."
+```{r, eval}
+study <- "thisStudyName" # e.g., "Jax.IU.Pitt_LOAD2"
+wdir <- "path/to/this/direcory"
+setwd(wdir)
+```
+
+6. Create ID key file from your data files, or skip to step 7.  
+See step 2 for explanation.
+```{r}
+source("https://raw.github.com/annat22/RModelAD/master/gen_ids_key.R")
+fl <- list.files(wdir)
+if (any(grepl("files_key.csv", fl))) {
+  idkey <- gen_ids_key(wdir)
+  write_csv(idkey, file="ids_key.csv")
+}
+```
+
+7. Generate and export manifest file.
+See step 2 for explanation.
+```{r}
+source("https://raw.github.com/annat22/RModelAD/master/gen_manifest.R")
+idkey <- read_csv("ids_key.csv")
+manifest <- gen_manifest(idkey)
+write_csv(manifest, file=paste0("manifest_",study,".csv"))
+```
+
+8. Generate and export individual metadata file
+```{r}
+source("https://raw.github.com/annat22/RModelAD/master/gen_ind_meta.R")
+idkey <- read_csv("ids_key.csv")
+ind_meta <- gen_ind_meta(idkey$animalName, birthMating_csv="birthIDmatingID.csv")
+write_csv(ind_meta, file=paste0("individual_animal_metadata_",study,".csv"))
+```
+
+9. Generate and export biospecimen metadata file.  
+Currently, the script requires sample names (specimenID) as stored on climb. In the near future it will be possible to provide animal names (individualID). In either cases, if samples are not on climb, this will return an empty template.
+```{r}
+source("https://raw.github.com/annat22/RModelAD/master/gen_biosp_meta.R")
+idkey <- read_csv("ids_key.csv")
+biosp_meta <- gen_biosp_meta(samplenames=idkey$sampleName)
+write_csv(biosp_meta, file=paste0("biospecimen_metadata_",study,".csv"))
+```
+
+10. Upload files to the AD Knowledge Portal
+```{r, eval=FALSE}
+```
+
+11. Run all  
+It is possible to run all the above steps simultaneously, except for step 10, using the following code. 
+This will generate all the metadata files but will not upload anything to the portal. It will also generate an html report from this file.
+Change the name of the Rmd file in the line below to match the name you gave this file.
+```{r}
+rmarkdown::render("climb2portal_README.Rmd")
+```
+
