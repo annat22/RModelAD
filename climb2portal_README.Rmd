@@ -26,13 +26,21 @@ The following steps need to be performed only once per device.
 install.packages(c("tidyverse", "synapser", "readxl", "lubridate", "rmarkdown"))
 ```
 
-3. Optional: download and install RStudio https://www.rstudio.com/products/rstudio/download/#download
+3. Set-up Synapse Login
+Enter your synapse credential in the code lines below and run it in the consule. They will be stored in your system so it will not be necessary to enter in future sessions.
+```{r, eval=FALSE}
+suppressPackageStartupMessages({
+  library(synapser)})
+synLogin(email="yourEmail", password="yourPassword", rememberMe = TRUE)
+```
+
+4. Optional: download and install RStudio https://www.rstudio.com/products/rstudio/download/#download
 RStudio provides a more convenient environment to run and modify this document but it's not necessary for running the actual code.
 
 # Study-Specific Workflow
 
 The following steps need to be repeated for each study (each conversion or upload instance).  
-To run all steps simultaneously see step 11.
+You can it step-by-step, or you can follow steps 1-5 and then run step 11. This will create all metadata files and manifest file but will not upload anything yet.
 
 1. Put a copy of this Rmd file in your working directory.  
 It's a good idea to create a separate directory for the input and output of this run (e.g., "portal_files"), within your study folder. It's also recommended to change the name of the file from climb2portal_README.Rmd to climb2portal_studyName.Rmd
@@ -75,7 +83,7 @@ A good practice is to change climb2portal_README to climb2portal_studyName
 5. Enter the study name and the path to current working directory.    
 Change study name and path in the code lines below and run them.  
 If you opened this Rmd file from within your working directory, enter "."
-```{r, eval}
+```{r}
 study <- "thisStudyName" # e.g., "Jax.IU.Pitt_LOAD2"
 wdir <- "path/to/this/direcory"
 setwd(wdir)
@@ -92,16 +100,15 @@ if (any(grepl("files_key.csv", fl))) {
 }
 ```
 
-7. Generate and export manifest file.
-See step 2 for explanation.
+7. Generate and export manifest file from ids_key.csv  
 ```{r}
 source("https://raw.github.com/annat22/RModelAD/master/gen_manifest.R")
 idkey <- read_csv("ids_key.csv")
 manifest <- gen_manifest(idkey)
-write_csv(manifest, file=paste0("manifest_",study,".csv"))
+write_tsv(manifest, file=paste0("manifest_",study,".tsv"))
 ```
 
-8. Generate and export individual metadata file.  
+8. Generate and export individual metadata from ids_key.csv  
 Note: BirthID and Mating ID are not currently available through the API. Therefore, it is necessary to export them manually from climb to a csv file and put it in the working directory. The file needs to include the following columns exported from climb: animalName,matingID,birthID. The script below reads the file and join this information with the metadata pulled through the API.
 ```{r}
 source("https://raw.github.com/annat22/RModelAD/master/gen_ind_meta.R")
@@ -110,7 +117,7 @@ ind_meta <- gen_ind_meta(idkey$animalName, birthMating_csv="birthIDmatingID.csv"
 write_csv(ind_meta, file=paste0("individual_animal_metadata_",study,".csv"))
 ```
 
-9. Generate and export biospecimen metadata file.  
+9. Generate and export biospecimen metadata file from ids_key.csv  
 Currently, the script requires sample names (specimenID) as stored on climb. In the near future it will be possible to provide animal names (individualID). In either cases, if samples are not on climb, this will return an empty template.
 ```{r}
 source("https://raw.github.com/annat22/RModelAD/master/gen_biosp_meta.R")
@@ -119,12 +126,18 @@ biosp_meta <- gen_biosp_meta(samplenames=idkey$sampleName)
 write_csv(biosp_meta, file=paste0("biospecimen_metadata_",study,".csv"))
 ```
 
-10. Upload files to the AD Knowledge Portal
+10. Upload files to the AD Knowledge Portal.  
+After completing and validating the files, you can use the following lines to upload everything.
 ```{r, eval=FALSE}
+suppressPackageStartupMessages({
+  library(synapser)})
+synLogin(silent=TRUE)
+syncToSynapse(paste0("manifest_",study,".tsv"))
+
 ```
 
-11. Run all  
-It is possible to run all the above steps continuously, except for step 10, using the following line of code. 
+11. Run all.  
+It is possible to run steps 6-9 continuously, using the following line of code. 
 This will generate all the metadata files but will not upload anything to the portal. It will also generate an html report from this file.
 Change the name of the Rmd file in the line below to match the name you gave this file.
 ```{r}

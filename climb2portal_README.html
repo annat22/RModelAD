@@ -184,13 +184,19 @@ NOTE: This code does not attempt any validation or standardization of the conten
 </ol>
 <pre class="r"><code>install.packages(c(&quot;tidyverse&quot;, &quot;synapser&quot;, &quot;readxl&quot;, &quot;lubridate&quot;, &quot;rmarkdown&quot;))</code></pre>
 <ol start="3" style="list-style-type: decimal">
+<li>Set-up Synapse Login Enter your synapse credential in the code lines below and run it in the consule. They will be stored in your system so it will not be necessary to enter in future sessions.</li>
+</ol>
+<pre class="r"><code>suppressPackageStartupMessages({
+  library(synapser)})
+synLogin(email=&quot;yourEmail&quot;, password=&quot;yourPassword&quot;, rememberMe = TRUE)</code></pre>
+<ol start="4" style="list-style-type: decimal">
 <li>Optional: download and install RStudio <a href="https://www.rstudio.com/products/rstudio/download/#download" class="uri">https://www.rstudio.com/products/rstudio/download/#download</a> RStudio provides a more convenient environment to run and modify this document but it’s not necessary for running the actual code.</li>
 </ol>
 </div>
 <div id="study-specific-workflow" class="section level1">
 <h1>Study-Specific Workflow</h1>
 <p>The following steps need to be repeated for each study (each conversion or upload instance).<br />
-To run all steps simultaneously see step 11.</p>
+You can it step-by-step, or you can follow steps 1-5 and then run step 11. This will create all metadata files and manifest file but will not upload anything yet.</p>
 <ol style="list-style-type: decimal">
 <li><p>Put a copy of this Rmd file in your working directory.<br />
 It’s a good idea to create a separate directory for the input and output of this run (e.g., “portal_files”), within your study folder. It’s also recommended to change the name of the file from climb2portal_README.Rmd to climb2portal_studyName.Rmd</p></li>
@@ -242,14 +248,14 @@ if (any(grepl(&quot;files_key.csv&quot;, fl))) {
   write_csv(idkey, file=&quot;ids_key.csv&quot;)
 }</code></pre>
 <ol start="7" style="list-style-type: decimal">
-<li>Generate and export manifest file. See step 2 for explanation.</li>
+<li>Generate and export manifest file from ids_key.csv</li>
 </ol>
 <pre class="r"><code>source(&quot;https://raw.github.com/annat22/RModelAD/master/gen_manifest.R&quot;)
 idkey &lt;- read_csv(&quot;ids_key.csv&quot;)
 manifest &lt;- gen_manifest(idkey)
-write_csv(manifest, file=paste0(&quot;manifest_&quot;,study,&quot;.csv&quot;))</code></pre>
+write_tsv(manifest, file=paste0(&quot;manifest_&quot;,study,&quot;.tsv&quot;))</code></pre>
 <ol start="8" style="list-style-type: decimal">
-<li>Generate and export individual metadata file.<br />
+<li>Generate and export individual metadata from ids_key.csv<br />
 Note: BirthID and Mating ID are not currently available through the API. Therefore, it is necessary to export them manually from climb to a csv file and put it in the working directory. The file needs to include the following columns exported from climb: animalName,matingID,birthID. The script below reads the file and join this information with the metadata pulled through the API.</li>
 </ol>
 <pre class="r"><code>source(&quot;https://raw.github.com/annat22/RModelAD/master/gen_ind_meta.R&quot;)
@@ -257,7 +263,7 @@ idkey &lt;- read_csv(&quot;ids_key.csv&quot;)
 ind_meta &lt;- gen_ind_meta(idkey$animalName, birthMating_csv=&quot;birthIDmatingID.csv&quot;)
 write_csv(ind_meta, file=paste0(&quot;individual_animal_metadata_&quot;,study,&quot;.csv&quot;))</code></pre>
 <ol start="9" style="list-style-type: decimal">
-<li>Generate and export biospecimen metadata file.<br />
+<li>Generate and export biospecimen metadata file from ids_key.csv<br />
 Currently, the script requires sample names (specimenID) as stored on climb. In the near future it will be possible to provide animal names (individualID). In either cases, if samples are not on climb, this will return an empty template.</li>
 </ol>
 <pre class="r"><code>source(&quot;https://raw.github.com/annat22/RModelAD/master/gen_biosp_meta.R&quot;)
@@ -265,9 +271,16 @@ idkey &lt;- read_csv(&quot;ids_key.csv&quot;)
 biosp_meta &lt;- gen_biosp_meta(samplenames=idkey$sampleName)
 write_csv(biosp_meta, file=paste0(&quot;biospecimen_metadata_&quot;,study,&quot;.csv&quot;))</code></pre>
 <ol start="10" style="list-style-type: decimal">
-<li><p>Upload files to the AD Knowledge Portal</p></li>
-<li><p>Run all<br />
-It is possible to run all the above steps continuously, except for step 10, using the following line of code. This will generate all the metadata files but will not upload anything to the portal. It will also generate an html report from this file. Change the name of the Rmd file in the line below to match the name you gave this file.</p></li>
+<li>Upload files to the AD Knowledge Portal.<br />
+After completing and validating the files, you can use the following lines to upload everything.</li>
+</ol>
+<pre class="r"><code>suppressPackageStartupMessages({
+  library(synapser)})
+synLogin(silent=TRUE)
+syncToSynapse(paste0(&quot;manifest_&quot;,study,&quot;.tsv&quot;))</code></pre>
+<ol start="11" style="list-style-type: decimal">
+<li>Run all.<br />
+It is possible to run steps 6-9 continuously, using the following line of code. This will generate all the metadata files but will not upload anything to the portal. It will also generate an html report from this file. Change the name of the Rmd file in the line below to match the name you gave this file.</li>
 </ol>
 <pre class="r"><code>rmarkdown::render(&quot;climb2portal_README.Rmd&quot;)</code></pre>
 </div>
