@@ -1,3 +1,0 @@
-assay,dataDir,dataFile, individualID, specimenID,isMultiSpecimen
-rnaseq,/projects/carter-lab/adpmc/uncontrolled/data/rnaseq/mouse_models/nfcore/DeepPhenotyping/LOAD2/fastq_files,,,,FALSE
-frailty,.,frailty_assessment_Jax.IU.Pitt_LOAD2.csv,individualID,testID,TRUE
