@@ -21,8 +21,7 @@ gen_ids_key <- function(wdir) {
           rbind(idkey)
         
       } else if (!ki$isMultiSpecimen) {
-        dtf <- read_table("dtf.txt", col_names = F) %>% pull()
-        #dtf <- list.files(ki$dataDir, full.names=FALSE)
+        dtf <- list.files(ki$dataDir, full.names=FALSE)
         nm <- str_split(basename(dtf), "_", simplify = TRUE) %>%
           as.matrix(nr=length(dtf))
         idkey <- tibble(assay = ki$assay, 
