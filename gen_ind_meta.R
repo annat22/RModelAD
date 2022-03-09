@@ -15,7 +15,7 @@ suppressPackageStartupMessages({
 source("https://raw.github.com/TheJacksonLaboratory/ClimbR/master/climbGET.R")
 synLogin(silent=TRUE)
 
-gen_ind_meta <- function(animalnames, birthMating_csv) {
+gen_ind_meta <- function(animalnames, birthMating_csv=NULL) {
   
   # load template from synapse
   temp <- read_xlsx(synGet("syn21084071")$path, sheet = 1)
@@ -62,8 +62,10 @@ gen_ind_meta <- function(animalnames, birthMating_csv) {
     select(animalId, currentLocation)
   
   # combine metadata from climb and add matingID and birthID (not available via API)
-  meta_c <- left_join(inds, gts) %>% left_join(lines) %>% left_join(rooms) %>%
-    left_join(read_csv(birthMating_csv)) %>%
+  meta_c <- left_join(inds, gts) %>% left_join(lines) %>% left_join(rooms)
+  if (!is.null(birthMating_csv)) {
+    meta_c <- left_join(meta_c, read_csv(birthMating_csv))}
+  meta_c <- meta_c %>%
     mutate(individualIdSource = origin) %>%
     select(csmap$climbField)
   
