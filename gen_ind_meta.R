@@ -33,9 +33,9 @@ gen_ind_meta <- function(animalnames, birthMating_csv=NULL) {
     # calculate age from dateBorn and dateExit
     mutate(dateExit = as_date(ymd_hms(dateExit)),
            dateBorn = as_date(ymd_hms(dateBorn)),
-           ageDeath = difftime(dateExit, dateBorn, units = "weeks"),
-           ageDeath = round(as.double(gsub(" weeks", "", ageDeath))),
-           ageDeathUnits = "weeks")
+           ageDeath = difftime(dateExit, dateBorn, units = "months"),
+           ageDeath = round(as.double(gsub(" months", "", ageDeath))),
+           ageDeathUnits = "months")
 
   animalids <- ind_c$animalId
   linekeys <- ind_c$lineKey
@@ -63,7 +63,9 @@ gen_ind_meta <- function(animalnames, birthMating_csv=NULL) {
   
   # combine metadata from climb and add matingID and birthID (not available via API)
   meta_c <- left_join(inds, gts) %>% left_join(lines) %>% left_join(rooms)
-  if (!is.null(birthMating_csv)) {
+  if (is.null(birthMating_csv)) {
+    meta_c <- mutate(meta_c, birthID=NA, matingID=NA)
+  } else {
     meta_c <- left_join(meta_c, read_csv(birthMating_csv))}
   meta_c <- meta_c %>%
     mutate(individualIdSource = origin) %>%
