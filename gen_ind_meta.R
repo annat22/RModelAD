@@ -33,9 +33,9 @@ gen_ind_meta <- function(animalnames, birthMating_csv=NULL) {
     # calculate age from dateBorn and dateExit
     mutate(dateExit = as_date(ymd_hms(dateExit)),
            dateBorn = as_date(ymd_hms(dateBorn)),
-           ageDeath = difftime(dateExit, dateBorn, units = "months"),
-           ageDeath = round(as.double(gsub(" months", "", ageDeath))),
-           ageDeathUnits = "months")
+           ageDeath = difftime(dateExit, dateBorn, units = "weeks"),
+           ageDeath = round(as.double(gsub(" weeks", "", ageDeath))),
+           ageDeathUnits = "weeks")
 
   animalids <- ind_c$animalId
   linekeys <- ind_c$lineKey
