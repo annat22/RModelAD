@@ -66,7 +66,7 @@ gen_ind_meta <- function(animalnames, birthMating_csv=NULL) {
   if (is.null(birthMating_csv)) {
     meta_c <- mutate(meta_c, birthID=NA, matingID=NA)
   } else {
-    meta_c <- left_join(meta_c, read_csv(birthMating_csv))}
+    meta_c <- left_join(meta_c, read_csv(birthMating_csv, col_types = cols(.default = "c")))}
   meta_c <- meta_c %>%
     mutate(individualIdSource = origin) %>%
     select(csmap$climbField)
