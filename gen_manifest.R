@@ -25,7 +25,6 @@ gen_manifest <- function(idkey) {
     mutate(isMultiSpecimen=TRUE) %>%
     rbind(manifest.s) %>%
     unite("path", dataDir, dataFile , remove=TRUE, sep="/") %>%
-    mutate(study = study) %>%
     merge(temp, all.x=TRUE, all.y=TRUE, sort=FALSE) %>%
     select(-n)
   
