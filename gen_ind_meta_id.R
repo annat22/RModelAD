@@ -16,10 +16,10 @@ gen_ind_meta_id <- function(climbID, workgroup=c("modelad", "marmoad")) {
   # load template from synapse
   temp <- read_xlsx(synGet("syn21084071")$path, sheet = 1)
   # load mapping table from synapse
+  climbFieldcol <- paste0("climbField_",workgroup)
   csmap0 <- read_csv(synGet("syn26137185")$path) %>%
     filter(synapseFile=="individual") %>%
-    mutate(climbField=if_else(climbField=="origin" & synapseField=="individualIdSource", 
-                              "individualIdSource", climbField))
+    select(synapseField, climbFacet, climbField = all_of(climbFieldcol))
   
   csmap <- csmap0 %>%
     filter(!is.na(climbField))
@@ -62,7 +62,7 @@ gen_ind_meta_id <- function(climbID, workgroup=c("modelad", "marmoad")) {
     left_join(lines) %>% 
     mutate(birthID=NA, matingID=NA) %>%
     #left_join(rooms) %>%
-    mutate(individualIdSource = origin) %>%
+    # mutate(individualIdSource = origin) %>%
     select(csmap$climbField)
   
   # join metadata from climb with synapse template
