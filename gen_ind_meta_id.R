@@ -50,7 +50,6 @@ gen_ind_meta_id <- function(climbID, workgroup=c("modelad", "marmoad")) {
     pivot_wider(names_from = assay, values_from = genotype) %>%
     unite("genotype", -1, sep= "; ")
   
-   
   # get room info from climb
  # rooms <- climbGET(climbID, "housings", "animalId") %>%
   #  distinct(animalId, .keep_all=TRUE) %>%
