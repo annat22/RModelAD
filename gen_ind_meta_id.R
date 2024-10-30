@@ -11,7 +11,7 @@ suppressPackageStartupMessages({
 source("https://raw.github.com/TheJacksonLaboratory/ClimbR/master/climbGET.R")
 synLogin(silent=TRUE)
 
-gen_ind_meta_id <- function(climbID) {
+gen_ind_meta_id <- function(climbID, workgroup=c("modelad", "marmoad")) {
   
   # load template from synapse
   temp <- read_xlsx(synGet("syn21084071")$path, sheet = 1)

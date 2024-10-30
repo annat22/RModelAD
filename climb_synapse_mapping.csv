@@ -22,8 +22,8 @@ individual,climbID,animals,animalId,animalId
 individual,microchipID,animals,microchipIdentifier,microchipIdentifier
 individual,birthID,script,NA,NA
 individual,matingID,script,NA,NA
-individual,individualIdSource,animals,origin,script
-individual,materialOrigin,animals,origin,script
+individual,individualIdSource,animals,script,script
+individual,materialOrigin,animals,script,script
 individual,sex,animals,sex,sex
 individual,species,animals,species,species
 individual,generation,animals,generation,generation
