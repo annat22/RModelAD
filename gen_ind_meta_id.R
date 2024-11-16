@@ -19,10 +19,13 @@ gen_ind_meta_id <- function(climbID, workgroup=c("modelad", "marmoad")) {
   climbFieldcol <- paste0("climbField_",workgroup)
   csmap0 <- read_csv(synGet("syn26137185")$path) %>%
     filter(synapseFile=="individual") %>%
-    select(synapseField, climbFacet, climbField = all_of(climbFieldcol))
+    select(synapseField, climbFacet, climbField = all_of(climbFieldcol))  
   
   csmap <- csmap0 %>%
-    filter(!is.na(climbField))
+    filter(!is.na(climbField)) %>%
+    ## Need to add animalName field for Marmo-Ad for merging
+    mutate(climbField=case_when(synapseField=="individualID" ~ "animalName", TRUE~climbField))
+  
   
   cat("Generating individual metadata file from climbID\n")
   # get animal metadata from climb
@@ -33,7 +36,7 @@ gen_ind_meta_id <- function(climbID, workgroup=c("modelad", "marmoad")) {
            dateBorn = as_date(ymd_hms(dateBorn)),
            ageDeath = difftime(dateExit, dateBorn, units = "days"),
            ageDeath = round(as.double(gsub(" days", "", ageDeath))),
-           ageDeathUnits = "days")
+           ageDeathUnits = "days")  
 
   # get lines info from climb
   lines <-  climbGET(ind_c$lineKey, "lines", "lineKey") %>%
@@ -47,8 +50,8 @@ gen_ind_meta_id <- function(climbID, workgroup=c("modelad", "marmoad")) {
   gts <- gt_c %>%
     mutate(genotype = paste(assay, genotype, sep="_")) %>%
     select(animalId, assay, genotype) %>%
-    pivot_wider(names_from = assay, values_from = genotype) %>%
-    unite("genotype", -1, sep= "; ")
+    group_by(animalId) %>%
+    summarize(genotype=paste0(unique(genotype),collapse=", "))
   
   # get room info from climb
  # rooms <- climbGET(climbID, "housings", "animalId") %>%
@@ -59,7 +62,7 @@ gen_ind_meta_id <- function(climbID, workgroup=c("modelad", "marmoad")) {
   # combine metadata from climb and add matingID and birthID (not available via API)
   meta_c <- left_join(inds, gts) %>% 
     left_join(lines) %>% 
-    mutate(birthID=NA, matingID=NA) %>%
+    mutate(birthID=NA, matingID=NA, animalName=animalId) %>%
     #left_join(rooms) %>%
     # mutate(individualIdSource = origin) %>%
     select(csmap$climbField)
