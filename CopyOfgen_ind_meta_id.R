@@ -11,17 +11,21 @@ suppressPackageStartupMessages({
 source("https://raw.github.com/TheJacksonLaboratory/ClimbR/master/climbGET.R")
 synLogin(silent=TRUE)
 
-gen_ind_meta_id <- function(climbID) {
+gen_ind_meta_id <- function(climbID, workgroup=c("modelad", "marmoad")) {
   
   # load template from synapse
   temp <- read_xlsx(synGet("syn21084071")$path, sheet = 1)
   # load mapping table from synapse
+  climbFieldcol <- paste0("climbField_",workgroup)
   csmap0 <- read_csv(synGet("syn26137185")$path) %>%
     filter(synapseFile=="individual") %>%
-    select(synapseField, climbFacet, climbField)  
+    select(synapseField, climbFacet, climbField = all_of(climbFieldcol))  
   
   csmap <- csmap0 %>%
-    filter(!is.na(climbField))
+    filter(!is.na(climbField)) %>%
+    ## Need to add animalName field for Marmo-Ad for merging
+    mutate(climbField=case_when(synapseField=="individualID" ~ "animalName", TRUE~climbField))
+  
   
   cat("Generating individual metadata file from climbID\n")
   # get animal metadata from climb
@@ -38,6 +42,8 @@ gen_ind_meta_id <- function(climbID) {
   lines <-  climbGET(ind_c$lineKey, "lines", "lineKey") %>%
     select(lineName=name, shortName, stock, backgroundLine) %>%
     mutate(animalId = climbID)
+  
+  ## TODO export empty template if animals are not on climb
   
   # get genotypes from climb
   gt_c <- climbGET(climbID, "genotypes", "animalId") 
